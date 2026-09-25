@@ -11,6 +11,7 @@ GitHub Pages 静态照片墙示例，支持：
 ## 目录结构
 
 - `index.html`
+- `gallery-utils.js`
 - `style.css`
 - `script.js`
 - `CNAME.template`

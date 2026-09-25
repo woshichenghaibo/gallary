@@ -1,5 +1,4 @@
 const PAGE_SIZE = 20;
-const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
 
 const gallery = document.getElementById('gallery');
 const pagination = document.getElementById('pagination');
@@ -28,7 +27,7 @@ function initializeGallery() {
   let repositoryConfig;
 
   try {
-    repositoryConfig = getRepositoryConfig();
+    repositoryConfig = GalleryUtils.getRepositoryConfig(window.location, document.body.dataset);
   } catch (error) {
     renderMessage('error', getDisplayErrorMessage(error));
     console.error(error);
@@ -37,7 +36,11 @@ function initializeGallery() {
 
   const imagesApiUrl = `https://api.github.com/repos/${repositoryConfig.owner}/${repositoryConfig.repo}/contents/${repositoryConfig.imagesPath}`;
 
-  fetch(imagesApiUrl)
+  fetch(imagesApiUrl, {
+    headers: {
+      Accept: 'application/vnd.github+json'
+    }
+  })
     .then((response) => {
       if (!response.ok) {
         throw new Error(getFetchErrorMessage(response.status));
@@ -50,11 +53,11 @@ function initializeGallery() {
       }
 
       images = entries
-        .filter((entry) => entry && entry.type === 'file' && isSupportedImageFile(entry.name))
+        .filter((entry) => entry && entry.type === 'file' && GalleryUtils.isSupportedImageFile(entry.name))
         .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
         .map((entry) => ({
           name: entry.name,
-          url: buildImageUrl(entry)
+          url: GalleryUtils.buildImageUrl(entry, repositoryConfig, window.location)
         }));
 
       totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
@@ -144,49 +147,6 @@ function getVisiblePages(page, pages) {
   }
 
   return [1, '...', page - 1, page, page + 1, '...', pages];
-}
-
-function isSupportedImageFile(filename) {
-  const lowercaseFilename = filename.toLowerCase();
-  return SUPPORTED_IMAGE_EXTENSIONS.some((extension) => lowercaseFilename.endsWith(extension));
-}
-
-function buildImageUrl(entry) {
-  if (entry.download_url) {
-    return entry.download_url;
-  }
-
-  if (entry.path) {
-    return new URL(entry.path, document.baseURI).toString();
-  }
-
-  return entry.download_url || '';
-}
-
-function getRepositoryConfig() {
-  const { hostname, pathname } = window.location;
-  const configuredOwner = document.body.dataset.githubOwner || '';
-  const configuredRepo = document.body.dataset.githubRepo || '';
-  const configuredImagesPath = document.body.dataset.imagesPath || 'images';
-
-  if (hostname.endsWith('.github.io')) {
-    const pathSegments = pathname.split('/').filter(Boolean);
-    return {
-      owner: hostname.split('.')[0],
-      repo: pathSegments[0] || configuredRepo,
-      imagesPath: configuredImagesPath
-    };
-  }
-
-  if (configuredOwner && configuredRepo) {
-    return {
-      owner: configuredOwner,
-      repo: configuredRepo,
-      imagesPath: configuredImagesPath
-    };
-  }
-
-  throw new Error('未配置 GitHub 仓库信息。请在页面的 data-github-owner 和 data-github-repo 属性中指定公开仓库。');
 }
 
 function getFetchErrorMessage(status) {
