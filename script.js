@@ -156,12 +156,13 @@ function showImage(step) {
     return;
   }
 
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, images.length);
-  const pageLength = end - start;
-  const pageOffset = (currentIndex - start + step + pageLength) % pageLength;
+  const targetIndex = (currentIndex + step + images.length) % images.length;
+  const targetPage = Math.floor(targetIndex / PAGE_SIZE) + 1;
+  if (targetPage !== currentPage) {
+    renderPage(targetPage);
+  }
 
-  currentIndex = start + pageOffset;
+  currentIndex = targetIndex;
   lightboxImage.src = buildImageUrl(images[currentIndex]);
 }
 
