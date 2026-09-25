@@ -36,7 +36,49 @@ function initializeGallery() {
 
   const imagesApiUrl = `https://api.github.com/repos/${repositoryConfig.owner}/${repositoryConfig.repo}/contents/${repositoryConfig.imagesPath}`;
 
-  fetch(imagesApiUrl, {
+  fetchDirectoryImages(imagesApiUrl)
+    .then((entries) => {
+      images = entries
+        .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
+        .map((entry) => ({
+          name: entry.name,
+          url: GalleryUtils.buildImageUrl(entry, repositoryConfig, window.location)
+        }));
+
+      totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
+      renderPage(1);
+    })
+    .catch((error) => {
+      renderMessage('error', getDisplayErrorMessage(error));
+      console.error(error);
+    });
+}
+
+async function fetchDirectoryImages(url) {
+  const entries = await fetchDirectoryEntries(url);
+  const imagesInDirectory = [];
+
+  for (const entry of entries) {
+    if (!entry) {
+      continue;
+    }
+
+    if (entry.type === 'file' && GalleryUtils.isSupportedImageFile(entry.name)) {
+      imagesInDirectory.push(entry);
+      continue;
+    }
+
+    if (entry.type === 'dir' && entry.url) {
+      const nestedImages = await fetchDirectoryImages(entry.url);
+      imagesInDirectory.push(...nestedImages);
+    }
+  }
+
+  return imagesInDirectory;
+}
+
+function fetchDirectoryEntries(url) {
+  return fetch(url, {
     headers: {
       Accept: 'application/vnd.github+json'
     }
@@ -52,20 +94,7 @@ function initializeGallery() {
         throw new Error('GitHub API 返回的数据格式不正确。');
       }
 
-      images = entries
-        .filter((entry) => entry && entry.type === 'file' && GalleryUtils.isSupportedImageFile(entry.name))
-        .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
-        .map((entry) => ({
-          name: entry.name,
-          url: GalleryUtils.buildImageUrl(entry, repositoryConfig, window.location)
-        }));
-
-      totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
-      renderPage(1);
-    })
-    .catch((error) => {
-      renderMessage('error', getDisplayErrorMessage(error));
-      console.error(error);
+      return entries;
     });
 }
 

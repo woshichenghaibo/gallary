@@ -12,7 +12,8 @@ test('getRepositoryConfig prefers explicit configured repository details', () =>
   assert.deepEqual(config, {
     owner: 'woshichenghaibo',
     repo: 'gallary',
-    imagesPath: 'images'
+    imagesPath: 'images',
+    siteBasePath: ''
   });
 });
 
@@ -25,7 +26,8 @@ test('getRepositoryConfig infers owner and repo from GitHub Pages project URLs',
   assert.deepEqual(config, {
     owner: 'woshichenghaibo',
     repo: 'gallary',
-    imagesPath: 'images'
+    imagesPath: 'images',
+    siteBasePath: ''
   });
 });
 
@@ -38,7 +40,8 @@ test('getRepositoryConfig infers user Pages repositories from root github.io URL
   assert.deepEqual(config, {
     owner: 'woshichenghaibo',
     repo: 'woshichenghaibo.github.io',
-    imagesPath: 'images'
+    imagesPath: 'images',
+    siteBasePath: ''
   });
 });
 
@@ -48,7 +51,7 @@ test('buildImageUrl prefers download_url when GitHub returns one', () => {
       name: 'QQ (1).jpg',
       download_url: 'https://raw.githubusercontent.com/woshichenghaibo/gallary/main/images/QQ%20(1).jpg'
     },
-    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'images' },
+    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'images', siteBasePath: '' },
     { origin: 'https://photos.example.com', hostname: 'photos.example.com', pathname: '/' }
   );
 
@@ -61,7 +64,7 @@ test('buildImageUrl falls back to the deployed Pages path when download_url is a
       name: 'QQ (1).jpg',
       path: 'images/QQ (1).jpg'
     },
-    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'images' },
+    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'images', siteBasePath: '' },
     { origin: 'https://woshichenghaibo.github.io', hostname: 'woshichenghaibo.github.io', pathname: '/gallary/' }
   );
 
@@ -74,7 +77,7 @@ test('buildImageUrl keeps root-relative paths for user Pages repositories', () =
       name: 'cover.jpg',
       path: 'images/cover.jpg'
     },
-    { owner: 'woshichenghaibo', repo: 'woshichenghaibo.github.io', imagesPath: 'images' },
+    { owner: 'woshichenghaibo', repo: 'woshichenghaibo.github.io', imagesPath: 'images', siteBasePath: '' },
     { origin: 'https://woshichenghaibo.github.io', hostname: 'woshichenghaibo.github.io', pathname: '/posts/demo/' }
   );
 
@@ -87,9 +90,22 @@ test('buildImageUrl preserves nested entry paths when download_url is absent', (
       name: 'cover.jpg',
       path: 'assets/photos/cover.jpg'
     },
-    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'assets/photos' },
+    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'assets/photos', siteBasePath: '' },
     { origin: 'https://woshichenghaibo.github.io', hostname: 'woshichenghaibo.github.io', pathname: '/gallary/' }
   );
 
   assert.equal(url, 'https://woshichenghaibo.github.io/gallary/assets/photos/cover.jpg');
+});
+
+test('buildImageUrl respects an explicit custom-domain site base path', () => {
+  const url = buildImageUrl(
+    {
+      name: 'cover.jpg',
+      path: 'images/cover.jpg'
+    },
+    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'images', siteBasePath: '/gallery-site' },
+    { origin: 'https://photos.example.com', hostname: 'photos.example.com', pathname: '/preview/' }
+  );
+
+  assert.equal(url, 'https://photos.example.com/gallery-site/images/cover.jpg');
 });

@@ -10,6 +10,7 @@
     const configuredOwner = dataset.githubOwner || '';
     const configuredRepo = dataset.githubRepo || '';
     const configuredImagesPath = dataset.imagesPath || 'images';
+    const configuredSiteBasePath = dataset.siteBasePath || '';
     const hostname = locationLike.hostname || '';
     const pathname = locationLike.pathname || '/';
 
@@ -17,7 +18,8 @@
       return {
         owner: configuredOwner,
         repo: configuredRepo,
-        imagesPath: configuredImagesPath
+        imagesPath: configuredImagesPath,
+        siteBasePath: normalizeBasePath(configuredSiteBasePath)
       };
     }
 
@@ -30,7 +32,8 @@
         return {
           owner: inferredOwner,
           repo: inferredRepo,
-          imagesPath: configuredImagesPath
+          imagesPath: configuredImagesPath,
+          siteBasePath: normalizeBasePath(configuredSiteBasePath)
         };
       }
     }
@@ -55,6 +58,10 @@
   }
 
   function getSiteBasePath(locationLike, repositoryConfig) {
+    if (repositoryConfig.siteBasePath) {
+      return repositoryConfig.siteBasePath;
+    }
+
     const hostname = locationLike.hostname || '';
     const pathname = locationLike.pathname || '/';
     const userSiteRepoName = `${repositoryConfig.owner}.github.io`;
@@ -71,6 +78,14 @@
     }
 
     return '';
+  }
+
+  function normalizeBasePath(siteBasePath) {
+    if (!siteBasePath || siteBasePath === '/') {
+      return '';
+    }
+
+    return `/${siteBasePath.replace(/^\/+|\/+$/g, '')}`;
   }
 
   function joinUrlPath(...parts) {

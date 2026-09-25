@@ -20,7 +20,7 @@ GitHub Pages 静态照片墙示例，支持：
 ## 使用方式
 
 1. 将照片文件放入 `images/` 目录。
-2. 支持的图片格式为：`.jpg`、`.jpeg`、`.png`、`.gif`、`.webp`、`.avif`。页面会在运行时通过 GitHub Contents API 自动发现这些文件，并忽略子目录与非图片文件。
+2. 支持的图片格式为：`.jpg`、`.jpeg`、`.png`、`.gif`、`.webp`、`.avif`。页面会在运行时通过 GitHub Contents API 自动发现 `images/`（以及其子目录）中的这些文件，并忽略非图片文件。
 3. 仓库需要保持 **公开（public）**，这样浏览器端脚本才能在不暴露 token 的前提下访问 GitHub Contents API。
 4. 在 GitHub 仓库 **Settings → Pages** 中设置：
    - Source: `Deploy from a branch`
@@ -29,7 +29,7 @@ GitHub Pages 静态照片墙示例，支持：
 
 之后你只需要继续往 `images/` 上传新图片，GitHub Pages 页面刷新后就会自动显示，无需再维护任何图片清单文件。
 
-如果你 fork 了这个项目并绑定了自己的自定义域名，请把 `index.html` 中 `<body>` 上的 `data-github-owner` / `data-github-repo` 改成你自己的公开仓库信息；部署在 `*.github.io` 地址下时会自动识别仓库路径。
+如果你 fork 了这个项目并绑定了自己的自定义域名，请把 `index.html` 中 `<body>` 上的 `data-github-owner` / `data-github-repo` 改成你自己的公开仓库信息；部署在 `*.github.io` 地址下时会自动识别仓库路径。若你的自定义域名站点不是部署在域名根路径，而是部署在某个子路径下，还需要同时设置 `data-site-base-path`。
 
 ## 绑定自定义域名
 
