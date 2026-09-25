@@ -29,6 +29,19 @@ test('getRepositoryConfig infers owner and repo from GitHub Pages project URLs',
   });
 });
 
+test('getRepositoryConfig infers user Pages repositories from root github.io URLs', () => {
+  const config = getRepositoryConfig(
+    { hostname: 'woshichenghaibo.github.io', pathname: '/' },
+    {}
+  );
+
+  assert.deepEqual(config, {
+    owner: 'woshichenghaibo',
+    repo: 'woshichenghaibo.github.io',
+    imagesPath: 'images'
+  });
+});
+
 test('buildImageUrl prefers download_url when GitHub returns one', () => {
   const url = buildImageUrl(
     {
@@ -66,4 +79,17 @@ test('buildImageUrl keeps root-relative paths for user Pages repositories', () =
   );
 
   assert.equal(url, 'https://woshichenghaibo.github.io/images/cover.jpg');
+});
+
+test('buildImageUrl preserves nested entry paths when download_url is absent', () => {
+  const url = buildImageUrl(
+    {
+      name: 'cover.jpg',
+      path: 'assets/photos/cover.jpg'
+    },
+    { owner: 'woshichenghaibo', repo: 'gallary', imagesPath: 'assets/photos' },
+    { origin: 'https://woshichenghaibo.github.io', hostname: 'woshichenghaibo.github.io', pathname: '/gallary/' }
+  );
+
+  assert.equal(url, 'https://woshichenghaibo.github.io/gallary/assets/photos/cover.jpg');
 });

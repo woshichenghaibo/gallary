@@ -24,7 +24,7 @@
     if (hostname.endsWith('.github.io')) {
       const pathSegments = pathname.split('/').filter(Boolean);
       const inferredOwner = hostname.split('.')[0];
-      const inferredRepo = pathSegments[0];
+      const inferredRepo = pathSegments[0] || `${inferredOwner}.github.io`;
 
       if (inferredOwner && inferredRepo) {
         return {
@@ -43,9 +43,9 @@
       return entry.download_url;
     }
 
-    const imageName = entry.name || extractImageName(entry.path || '');
     const basePath = getSiteBasePath(locationLike, repositoryConfig);
-    const imagePath = joinUrlPath(basePath, repositoryConfig.imagesPath, imageName);
+    const relativeContentPath = entry.path || joinUrlPath(repositoryConfig.imagesPath, entry.name || extractImageName(entry.path || ''));
+    const imagePath = joinUrlPath(basePath, relativeContentPath);
     return new URL(imagePath, locationLike.origin).toString();
   }
 
