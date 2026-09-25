@@ -8,6 +8,7 @@ const closeButton = document.querySelector('.close-btn');
 const prevButton = document.querySelector('.prev-btn');
 const nextButton = document.querySelector('.next-btn');
 const year = document.getElementById('year');
+const pageContent = document.querySelectorAll('header, main, footer');
 
 year.textContent = String(new Date().getFullYear());
 
@@ -131,12 +132,20 @@ function openLightbox(index) {
   lightboxImage.src = buildImageUrl(images[currentIndex]);
   lightbox.classList.add('active');
   lightbox.setAttribute('aria-hidden', 'false');
+  pageContent.forEach((element) => {
+    element.setAttribute('aria-hidden', 'true');
+    element.inert = true;
+  });
   closeButton.focus();
 }
 
 function closeLightbox() {
   lightbox.classList.remove('active');
   lightbox.setAttribute('aria-hidden', 'true');
+  pageContent.forEach((element) => {
+    element.removeAttribute('aria-hidden');
+    element.inert = false;
+  });
   if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
     lastFocusedElement.focus();
   }
@@ -147,13 +156,13 @@ function showImage(step) {
     return;
   }
 
-  currentIndex = (currentIndex + step + images.length) % images.length;
-  lightboxImage.src = buildImageUrl(images[currentIndex]);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, images.length);
+  const pageLength = end - start;
+  const pageOffset = (currentIndex - start + step + pageLength) % pageLength;
 
-  const targetPage = Math.floor(currentIndex / PAGE_SIZE) + 1;
-  if (targetPage !== currentPage) {
-    renderPage(targetPage);
-  }
+  currentIndex = start + pageOffset;
+  lightboxImage.src = buildImageUrl(images[currentIndex]);
 }
 
 closeButton.addEventListener('click', closeLightbox);

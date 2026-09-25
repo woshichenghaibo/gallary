@@ -30,5 +30,9 @@ GitHub Pages 静态照片墙示例，支持：
 1. 复制 `CNAME.template` 为 `CNAME`，并将内容改成你的域名（例如 `photos.example.com`）。
 2. 在域名服务商处配置 DNS：
    - 二级域名：添加 `CNAME` 记录到 `YOUR_USERNAME.github.io`
-   - 裸域名：添加 GitHub Pages 官方 `A` 记录
+   - 裸域名：添加 GitHub Pages 官方 `A` 记录  
+     `185.199.108.153`  
+     `185.199.109.153`  
+     `185.199.110.153`  
+     `185.199.111.153`
 3. 回到仓库 **Settings → Pages** 填写 Custom domain，并在可用时启用 HTTPS。
