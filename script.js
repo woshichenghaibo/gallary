@@ -56,25 +56,11 @@ function initializeGallery() {
 
 async function fetchDirectoryImages(url) {
   const entries = await fetchDirectoryEntries(url);
-  const imagesInDirectory = [];
+  const directImages = entries.filter((entry) => entry && entry.type === 'file' && GalleryUtils.isSupportedImageFile(entry.name));
+  const nestedDirectories = entries.filter((entry) => entry && entry.type === 'dir' && entry.url);
+  const nestedImages = await Promise.all(nestedDirectories.map((entry) => fetchDirectoryImages(entry.url)));
 
-  for (const entry of entries) {
-    if (!entry) {
-      continue;
-    }
-
-    if (entry.type === 'file' && GalleryUtils.isSupportedImageFile(entry.name)) {
-      imagesInDirectory.push(entry);
-      continue;
-    }
-
-    if (entry.type === 'dir' && entry.url) {
-      const nestedImages = await fetchDirectoryImages(entry.url);
-      imagesInDirectory.push(...nestedImages);
-    }
-  }
-
-  return imagesInDirectory;
+  return directImages.concat(...nestedImages);
 }
 
 function fetchDirectoryEntries(url) {
@@ -184,7 +170,7 @@ function getFetchErrorMessage(status) {
   }
 
   if (status === 404) {
-    return '未能读取 images/ 目录。请确认仓库是公开仓库，且默认分支中存在 images/ 文件夹。';
+    return '未能读取 images/ 目录。请确认默认分支中存在该目录，且仓库路径配置正确。';
   }
 
   return `未能从 GitHub 读取 images/ 目录（HTTP ${status}）。`;

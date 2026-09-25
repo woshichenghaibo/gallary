@@ -45,6 +45,20 @@ test('getRepositoryConfig infers user Pages repositories from root github.io URL
   });
 });
 
+test('getRepositoryConfig normalizes configured site base paths', () => {
+  const config = getRepositoryConfig(
+    { hostname: 'photos.example.com', pathname: '/' },
+    { githubOwner: 'woshichenghaibo', githubRepo: 'gallary', siteBasePath: '/gallery-site/' }
+  );
+
+  assert.deepEqual(config, {
+    owner: 'woshichenghaibo',
+    repo: 'gallary',
+    imagesPath: 'images',
+    siteBasePath: '/gallery-site'
+  });
+});
+
 test('buildImageUrl prefers download_url when GitHub returns one', () => {
   const url = buildImageUrl(
     {
