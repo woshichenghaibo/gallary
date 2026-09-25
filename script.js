@@ -18,42 +18,87 @@ let currentPage = 1;
 let totalPages = 1;
 let currentIndex = 0;
 let lastFocusedElement = null;
-const jsonUrl = new URL('images.json', document.baseURI).toString();
 
-fetch(jsonUrl)
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return response.json();
-  })
-  .then((files) => {
-    images = Array.isArray(files) ? files : [];
-    totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
-    renderPage(1);
-  })
-  .catch((error) => {
-    gallery.innerHTML = '<p class="error">未能加载 images.json，请检查文件是否存在且格式正确。</p>';
-    pagination.innerHTML = '';
+renderMessage('empty', '正在从 GitHub 读取图片目录...');
+
+initializeGallery();
+
+function initializeGallery() {
+  let repositoryConfig;
+
+  try {
+    repositoryConfig = GalleryUtils.getRepositoryConfig(window.location, document.body.dataset);
+  } catch (error) {
+    renderMessage('error', getDisplayErrorMessage(error));
     console.error(error);
-  });
+    return;
+  }
+
+  const imagesApiUrl = `https://api.github.com/repos/${repositoryConfig.owner}/${repositoryConfig.repo}/contents/${repositoryConfig.imagesPath}`;
+
+  fetchDirectoryImages(imagesApiUrl)
+    .then((entries) => {
+      images = entries
+        .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
+        .map((entry) => ({
+          name: entry.name,
+          url: GalleryUtils.buildImageUrl(entry, repositoryConfig, window.location)
+        }));
+
+      totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
+      renderPage(1);
+    })
+    .catch((error) => {
+      renderMessage('error', getDisplayErrorMessage(error));
+      console.error(error);
+    });
+}
+
+async function fetchDirectoryImages(url) {
+  const entries = await fetchDirectoryEntries(url);
+  const directImages = entries.filter((entry) => entry && entry.type === 'file' && GalleryUtils.isSupportedImageFile(entry.name));
+  const nestedDirectories = entries.filter((entry) => entry && entry.type === 'dir' && entry.url);
+  const nestedImages = await Promise.all(nestedDirectories.map((entry) => fetchDirectoryImages(entry.url)));
+
+  return directImages.concat(...nestedImages);
+}
+
+function fetchDirectoryEntries(url) {
+  return fetch(url, {
+    headers: {
+      Accept: 'application/vnd.github+json'
+    }
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(getFetchErrorMessage(response.status));
+      }
+      return response.json();
+    })
+    .then((entries) => {
+      if (!Array.isArray(entries)) {
+        throw new Error('GitHub API 返回的数据格式不正确。');
+      }
+
+      return entries;
+    });
+}
 
 function renderPage(targetPage) {
   currentPage = Math.min(Math.max(targetPage, 1), totalPages);
   gallery.innerHTML = '';
 
   if (images.length === 0) {
-    gallery.innerHTML = '<p class="empty">暂无图片，请将图片添加到 images/ 目录并更新 images.json。</p>';
-    pagination.innerHTML = '';
+    renderMessage('empty', 'images/ 目录里还没有可显示的图片。请上传 .jpg、.jpeg、.png、.gif、.webp 或 .avif 文件。');
     return;
   }
 
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageItems = images.slice(start, start + PAGE_SIZE);
 
-  pageItems.forEach((filename, index) => {
+  pageItems.forEach((imageEntry, index) => {
     const image = document.createElement('img');
-    image.src = buildImageUrl(filename);
+    image.src = imageEntry.url;
     image.alt = `照片 ${start + index + 1}`;
     image.loading = 'lazy';
     image.addEventListener('load', () => image.classList.add('loaded'));
@@ -119,8 +164,29 @@ function getVisiblePages(page, pages) {
   return [1, '...', page - 1, page, page + 1, '...', pages];
 }
 
-function buildImageUrl(filename) {
-  return new URL(`images/${filename}`, document.baseURI).toString();
+function getFetchErrorMessage(status) {
+  if (status === 403) {
+    return 'GitHub Contents API 暂时不可用，可能触发了未登录访问频率限制，请稍后刷新重试。';
+  }
+
+  if (status === 404) {
+    return '未能读取 images/ 目录。请确认默认分支中存在该目录，且仓库路径配置正确。';
+  }
+
+  return `未能从 GitHub 读取 images/ 目录（HTTP ${status}）。`;
+}
+
+function getDisplayErrorMessage(error) {
+  if (error instanceof TypeError) {
+    return '网络连接异常，暂时无法访问 GitHub Contents API，请稍后刷新重试。';
+  }
+
+  return error.message || '未能从 GitHub 读取 images/ 目录。';
+}
+
+function renderMessage(className, message) {
+  gallery.innerHTML = `<p class="${className}">${message}</p>`;
+  pagination.innerHTML = '';
 }
 
 function openLightbox(index) {
@@ -211,8 +277,8 @@ function trapFocus(event) {
 }
 
 function updateLightboxContent() {
-  const filename = images[currentIndex];
-  lightboxImage.src = buildImageUrl(filename);
-  lightboxImage.alt = `预览图片 ${currentIndex + 1}: ${filename}`;
+  const imageEntry = images[currentIndex];
+  lightboxImage.src = imageEntry.url;
+  lightboxImage.alt = `预览图片 ${currentIndex + 1}: ${imageEntry.name}`;
   lightboxTitle.textContent = `图片预览（第 ${currentIndex + 1} 张）`;
 }
