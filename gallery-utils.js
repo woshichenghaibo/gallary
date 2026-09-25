@@ -57,8 +57,13 @@
   function getSiteBasePath(locationLike, repositoryConfig) {
     const hostname = locationLike.hostname || '';
     const pathname = locationLike.pathname || '/';
+    const userSiteRepoName = `${repositoryConfig.owner}.github.io`;
 
     if (hostname.endsWith('.github.io')) {
+      if (repositoryConfig.repo === userSiteRepoName) {
+        return '';
+      }
+
       const pathSegments = pathname.split('/').filter(Boolean);
       if (pathSegments[0] === repositoryConfig.repo) {
         return `/${repositoryConfig.repo}`;

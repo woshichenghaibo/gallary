@@ -54,3 +54,16 @@ test('buildImageUrl falls back to the deployed Pages path when download_url is a
 
   assert.equal(url, 'https://woshichenghaibo.github.io/gallary/images/QQ%20(1).jpg');
 });
+
+test('buildImageUrl keeps root-relative paths for user Pages repositories', () => {
+  const url = buildImageUrl(
+    {
+      name: 'cover.jpg',
+      path: 'images/cover.jpg'
+    },
+    { owner: 'woshichenghaibo', repo: 'woshichenghaibo.github.io', imagesPath: 'images' },
+    { origin: 'https://woshichenghaibo.github.io', hostname: 'woshichenghaibo.github.io', pathname: '/posts/demo/' }
+  );
+
+  assert.equal(url, 'https://woshichenghaibo.github.io/images/cover.jpg');
+});
