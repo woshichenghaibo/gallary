@@ -4,6 +4,7 @@ const gallery = document.getElementById('gallery');
 const pagination = document.getElementById('pagination');
 const lightbox = document.getElementById('lightbox');
 const lightboxImage = document.getElementById('lightbox-img');
+const lightboxTitle = document.getElementById('lightbox-title');
 const closeButton = document.querySelector('.close-btn');
 const prevButton = document.querySelector('.prev-btn');
 const nextButton = document.querySelector('.next-btn');
@@ -129,7 +130,7 @@ function openLightbox(index) {
 
   lastFocusedElement = document.activeElement;
   currentIndex = index;
-  lightboxImage.src = buildImageUrl(images[currentIndex]);
+  updateLightboxContent();
   lightbox.classList.add('active');
   lightbox.setAttribute('aria-hidden', 'false');
   pageContent.forEach((element) => {
@@ -156,14 +157,13 @@ function showImage(step) {
     return;
   }
 
-  const targetIndex = (currentIndex + step + images.length) % images.length;
-  const targetPage = Math.floor(targetIndex / PAGE_SIZE) + 1;
-  if (targetPage !== currentPage) {
-    renderPage(targetPage);
-  }
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, images.length);
+  const pageLength = end - start;
+  const pageOffset = (currentIndex - start + step + pageLength) % pageLength;
 
-  currentIndex = targetIndex;
-  lightboxImage.src = buildImageUrl(images[currentIndex]);
+  currentIndex = start + pageOffset;
+  updateLightboxContent();
 }
 
 closeButton.addEventListener('click', closeLightbox);
@@ -208,4 +208,11 @@ function trapFocus(event) {
     event.preventDefault();
     first.focus();
   }
+}
+
+function updateLightboxContent() {
+  const filename = images[currentIndex];
+  lightboxImage.src = buildImageUrl(filename);
+  lightboxImage.alt = `预览图片 ${currentIndex + 1}: ${filename}`;
+  lightboxTitle.textContent = `图片预览（第 ${currentIndex + 1} 张）`;
 }

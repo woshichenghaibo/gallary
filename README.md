@@ -35,4 +35,5 @@ GitHub Pages 静态照片墙示例，支持：
      `185.199.109.153`  
      `185.199.110.153`  
      `185.199.111.153`
+     （发布前请以 GitHub 官方文档为准再次核对：https://docs.github.com/pages/configuring-a-custom-domain-for-your-github-pages-site ）
 3. 回到仓库 **Settings → Pages** 填写 Custom domain，并在可用时启用 HTTPS。
