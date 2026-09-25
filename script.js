@@ -1,4 +1,8 @@
 const PAGE_SIZE = 20;
+const GITHUB_OWNER = 'woshichenghaibo';
+const GITHUB_REPO = 'gallary';
+const IMAGES_PATH = 'images';
+const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
 
 const gallery = document.getElementById('gallery');
 const pagination = document.getElementById('pagination');
@@ -18,23 +22,35 @@ let currentPage = 1;
 let totalPages = 1;
 let currentIndex = 0;
 let lastFocusedElement = null;
-const jsonUrl = new URL('images.json', document.baseURI).toString();
+const imagesApiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${IMAGES_PATH}`;
 
-fetch(jsonUrl)
+renderMessage('empty', '正在从 GitHub 读取图片目录...');
+
+fetch(imagesApiUrl)
   .then((response) => {
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(getFetchErrorMessage(response.status));
     }
     return response.json();
   })
-  .then((files) => {
-    images = Array.isArray(files) ? files : [];
+  .then((entries) => {
+    if (!Array.isArray(entries)) {
+      throw new Error('GitHub API 返回的数据格式不正确。');
+    }
+
+    images = entries
+      .filter((entry) => entry && entry.type === 'file' && isSupportedImageFile(entry.name))
+      .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
+      .map((entry) => ({
+        name: entry.name,
+        url: buildImageUrl(entry)
+      }));
+
     totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
     renderPage(1);
   })
   .catch((error) => {
-    gallery.innerHTML = '<p class="error">未能加载 images.json，请检查文件是否存在且格式正确。</p>';
-    pagination.innerHTML = '';
+    renderMessage('error', getDisplayErrorMessage(error));
     console.error(error);
   });
 
@@ -43,17 +59,16 @@ function renderPage(targetPage) {
   gallery.innerHTML = '';
 
   if (images.length === 0) {
-    gallery.innerHTML = '<p class="empty">暂无图片，请将图片添加到 images/ 目录并更新 images.json。</p>';
-    pagination.innerHTML = '';
+    renderMessage('empty', 'images/ 目录里还没有可显示的图片。请上传 .jpg、.jpeg、.png、.gif、.webp 或 .avif 文件。');
     return;
   }
 
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageItems = images.slice(start, start + PAGE_SIZE);
 
-  pageItems.forEach((filename, index) => {
+  pageItems.forEach((imageEntry, index) => {
     const image = document.createElement('img');
-    image.src = buildImageUrl(filename);
+    image.src = imageEntry.url;
     image.alt = `照片 ${start + index + 1}`;
     image.loading = 'lazy';
     image.addEventListener('load', () => image.classList.add('loaded'));
@@ -119,8 +134,42 @@ function getVisiblePages(page, pages) {
   return [1, '...', page - 1, page, page + 1, '...', pages];
 }
 
-function buildImageUrl(filename) {
-  return new URL(`images/${filename}`, document.baseURI).toString();
+function isSupportedImageFile(filename) {
+  const lowercaseFilename = filename.toLowerCase();
+  return SUPPORTED_IMAGE_EXTENSIONS.some((extension) => lowercaseFilename.endsWith(extension));
+}
+
+function buildImageUrl(entry) {
+  if (entry.path) {
+    return new URL(entry.path, document.baseURI).toString();
+  }
+
+  return entry.download_url || '';
+}
+
+function getFetchErrorMessage(status) {
+  if (status === 403) {
+    return 'GitHub Contents API 暂时不可用，可能触发了未登录访问频率限制，请稍后刷新重试。';
+  }
+
+  if (status === 404) {
+    return '未能读取 images/ 目录。请确认仓库是公开仓库，且默认分支中存在 images/ 文件夹。';
+  }
+
+  return `未能从 GitHub 读取 images/ 目录（HTTP ${status}）。`;
+}
+
+function getDisplayErrorMessage(error) {
+  if (error instanceof TypeError) {
+    return '网络连接异常，暂时无法访问 GitHub Contents API，请稍后刷新重试。';
+  }
+
+  return error.message || '未能从 GitHub 读取 images/ 目录。';
+}
+
+function renderMessage(className, message) {
+  gallery.innerHTML = `<p class="${className}">${message}</p>`;
+  pagination.innerHTML = '';
 }
 
 function openLightbox(index) {
@@ -211,8 +260,8 @@ function trapFocus(event) {
 }
 
 function updateLightboxContent() {
-  const filename = images[currentIndex];
-  lightboxImage.src = buildImageUrl(filename);
-  lightboxImage.alt = `预览图片 ${currentIndex + 1}: ${filename}`;
+  const imageEntry = images[currentIndex];
+  lightboxImage.src = imageEntry.url;
+  lightboxImage.alt = `预览图片 ${currentIndex + 1}: ${imageEntry.name}`;
   lightboxTitle.textContent = `图片预览（第 ${currentIndex + 1} 张）`;
 }
