@@ -15,6 +15,7 @@ let images = [];
 let currentPage = 1;
 let totalPages = 1;
 let currentIndex = 0;
+let lastFocusedElement = null;
 const jsonUrl = new URL('images.json', document.baseURI).toString();
 
 fetch(jsonUrl)
@@ -125,15 +126,20 @@ function openLightbox(index) {
     return;
   }
 
+  lastFocusedElement = document.activeElement;
   currentIndex = index;
   lightboxImage.src = buildImageUrl(images[currentIndex]);
   lightbox.classList.add('active');
   lightbox.setAttribute('aria-hidden', 'false');
+  closeButton.focus();
 }
 
 function closeLightbox() {
   lightbox.classList.remove('active');
   lightbox.setAttribute('aria-hidden', 'true');
+  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+    lastFocusedElement.focus();
+  }
 }
 
 function showImage(step) {
@@ -165,7 +171,9 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
-  if (event.key === 'Escape') {
+  if (event.key === 'Tab') {
+    trapFocus(event);
+  } else if (event.key === 'Escape') {
     closeLightbox();
   } else if (event.key === 'ArrowLeft') {
     showImage(-1);
@@ -173,3 +181,21 @@ document.addEventListener('keydown', (event) => {
     showImage(1);
   }
 });
+
+function trapFocus(event) {
+  const focusableElements = lightbox.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])');
+  if (focusableElements.length === 0) {
+    return;
+  }
+
+  const first = focusableElements[0];
+  const last = focusableElements[focusableElements.length - 1];
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}

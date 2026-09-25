@@ -9,12 +9,12 @@ GitHub Pages 静态照片墙示例，支持：
 
 ## 目录结构
 
-- `/home/runner/work/gallary/gallary/index.html`
-- `/home/runner/work/gallary/gallary/style.css`
-- `/home/runner/work/gallary/gallary/script.js`
-- `/home/runner/work/gallary/gallary/images.json`
-- `/home/runner/work/gallary/gallary/CNAME.template`
-- `/home/runner/work/gallary/gallary/images/`（你自己的图片目录）
+- `index.html`
+- `style.css`
+- `script.js`
+- `images.json`
+- `CNAME.template`
+- `images/`（你自己的图片目录）
 
 ## 使用方式
 
