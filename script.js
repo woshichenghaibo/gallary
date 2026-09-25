@@ -1,7 +1,4 @@
 const PAGE_SIZE = 20;
-const GITHUB_OWNER = 'woshichenghaibo';
-const GITHUB_REPO = 'gallary';
-const IMAGES_PATH = 'images';
 const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
 
 const gallery = document.getElementById('gallery');
@@ -22,37 +19,52 @@ let currentPage = 1;
 let totalPages = 1;
 let currentIndex = 0;
 let lastFocusedElement = null;
-const imagesApiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${IMAGES_PATH}`;
 
 renderMessage('empty', '正在从 GitHub 读取图片目录...');
 
-fetch(imagesApiUrl)
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error(getFetchErrorMessage(response.status));
-    }
-    return response.json();
-  })
-  .then((entries) => {
-    if (!Array.isArray(entries)) {
-      throw new Error('GitHub API 返回的数据格式不正确。');
-    }
+initializeGallery();
 
-    images = entries
-      .filter((entry) => entry && entry.type === 'file' && isSupportedImageFile(entry.name))
-      .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
-      .map((entry) => ({
-        name: entry.name,
-        url: buildImageUrl(entry)
-      }));
+function initializeGallery() {
+  let repositoryConfig;
 
-    totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
-    renderPage(1);
-  })
-  .catch((error) => {
+  try {
+    repositoryConfig = getRepositoryConfig();
+  } catch (error) {
     renderMessage('error', getDisplayErrorMessage(error));
     console.error(error);
-  });
+    return;
+  }
+
+  const imagesApiUrl = `https://api.github.com/repos/${repositoryConfig.owner}/${repositoryConfig.repo}/contents/${repositoryConfig.imagesPath}`;
+
+  fetch(imagesApiUrl)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(getFetchErrorMessage(response.status));
+      }
+      return response.json();
+    })
+    .then((entries) => {
+      if (!Array.isArray(entries)) {
+        throw new Error('GitHub API 返回的数据格式不正确。');
+      }
+
+      images = entries
+        .filter((entry) => entry && entry.type === 'file' && isSupportedImageFile(entry.name))
+        .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true, sensitivity: 'base' }))
+        .map((entry) => ({
+          name: entry.name,
+          url: buildImageUrl(entry)
+        }));
+
+      totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE));
+      renderPage(1);
+    })
+    .catch((error) => {
+      renderMessage('error', getDisplayErrorMessage(error));
+      console.error(error);
+    });
+}
 
 function renderPage(targetPage) {
   currentPage = Math.min(Math.max(targetPage, 1), totalPages);
@@ -140,11 +152,41 @@ function isSupportedImageFile(filename) {
 }
 
 function buildImageUrl(entry) {
+  if (entry.download_url) {
+    return entry.download_url;
+  }
+
   if (entry.path) {
     return new URL(entry.path, document.baseURI).toString();
   }
 
   return entry.download_url || '';
+}
+
+function getRepositoryConfig() {
+  const { hostname, pathname } = window.location;
+  const configuredOwner = document.body.dataset.githubOwner || '';
+  const configuredRepo = document.body.dataset.githubRepo || '';
+  const configuredImagesPath = document.body.dataset.imagesPath || 'images';
+
+  if (hostname.endsWith('.github.io')) {
+    const pathSegments = pathname.split('/').filter(Boolean);
+    return {
+      owner: hostname.split('.')[0],
+      repo: pathSegments[0] || configuredRepo,
+      imagesPath: configuredImagesPath
+    };
+  }
+
+  if (configuredOwner && configuredRepo) {
+    return {
+      owner: configuredOwner,
+      repo: configuredRepo,
+      imagesPath: configuredImagesPath
+    };
+  }
+
+  throw new Error('未配置 GitHub 仓库信息。请在页面的 data-github-owner 和 data-github-repo 属性中指定公开仓库。');
 }
 
 function getFetchErrorMessage(status) {

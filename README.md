@@ -28,6 +28,8 @@ GitHub Pages 静态照片墙示例，支持：
 
 之后你只需要继续往 `images/` 上传新图片，GitHub Pages 页面刷新后就会自动显示，无需再维护任何图片清单文件。
 
+如果你 fork 了这个项目并绑定了自己的自定义域名，请把 `index.html` 中 `<body>` 上的 `data-github-owner` / `data-github-repo` 改成你自己的公开仓库信息；部署在 `*.github.io` 地址下时会自动识别仓库路径。
+
 ## 绑定自定义域名
 
 1. 复制 `CNAME.template` 为 `CNAME`，并将内容改成你的域名（例如 `photos.example.com`）。
