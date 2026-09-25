@@ -1,4 +1,4 @@
-# gallary
+# gallery
 
 GitHub Pages 静态照片墙示例，支持：
 

@@ -15,8 +15,9 @@ let images = [];
 let currentPage = 1;
 let totalPages = 1;
 let currentIndex = 0;
+const jsonUrl = new URL('images.json', document.baseURI).toString();
 
-fetch('images.json')
+fetch(jsonUrl)
   .then((response) => {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -49,7 +50,7 @@ function renderPage(targetPage) {
 
   pageItems.forEach((filename, index) => {
     const image = document.createElement('img');
-    image.src = `images/${filename}`;
+    image.src = buildImageUrl(filename);
     image.alt = `照片 ${start + index + 1}`;
     image.loading = 'lazy';
     image.addEventListener('load', () => image.classList.add('loaded'));
@@ -115,13 +116,17 @@ function getVisiblePages(page, pages) {
   return [1, '...', page - 1, page, page + 1, '...', pages];
 }
 
+function buildImageUrl(filename) {
+  return new URL(`images/${filename}`, document.baseURI).toString();
+}
+
 function openLightbox(index) {
   if (images.length === 0) {
     return;
   }
 
   currentIndex = index;
-  lightboxImage.src = `images/${images[currentIndex]}`;
+  lightboxImage.src = buildImageUrl(images[currentIndex]);
   lightbox.classList.add('active');
   lightbox.setAttribute('aria-hidden', 'false');
 }
@@ -137,7 +142,7 @@ function showImage(step) {
   }
 
   currentIndex = (currentIndex + step + images.length) % images.length;
-  lightboxImage.src = `images/${images[currentIndex]}`;
+  lightboxImage.src = buildImageUrl(images[currentIndex]);
 
   const targetPage = Math.floor(currentIndex / PAGE_SIZE) + 1;
   if (targetPage !== currentPage) {
